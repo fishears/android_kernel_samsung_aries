@@ -2499,13 +2499,15 @@ static struct i2c_board_info i2c_devs8[] __initdata = {
 static void fsa9480_usb_cb(bool attached)
 {
 	#ifdef CONFIG_FORCE_FAST_CHARGE
-	if ( force_fast_charge != 0 )
+	pr_info("%s: force_fast_charge: %d\n", __func__, force_fast_charge);
+	if (( force_fast_charge != 0 && set_cable_status != CABLE_TYPE_USB) || (force_fast_charge == 0 && set_cable_status == CABLE_TYPE_AC))
 	{
 	  fsa9480_charger_cb(attached);
 	}
 	else
 	{
 #endif
+	  pr_info("%s: force_fast_charge: %s\n", __func__, "USB");
 	  struct usb_gadget *gadget = platform_get_drvdata(&s3c_device_usbgadget);
 	  
 	  if (gadget) {
@@ -2525,6 +2527,7 @@ static void fsa9480_usb_cb(bool attached)
 
 static void fsa9480_charger_cb(bool attached)
 {
+	pr_info("%s: force_fast_charge: %s\n", __func__, "AC");
 	set_cable_status = attached ? CABLE_TYPE_AC : CABLE_TYPE_NONE;
 	if (charger_callbacks && charger_callbacks->set_cable)
 		charger_callbacks->set_cable(charger_callbacks, set_cable_status);
@@ -2537,13 +2540,14 @@ static struct switch_dev switch_dock = {
 static void fsa9480_deskdock_cb(bool attached)
 {
 #ifdef CONFIG_FORCE_FAST_CHARGE
-	if ( force_fast_charge != 0 )
+	if (( force_fast_charge != 0 && set_cable_status != CABLE_TYPE_USB) || (force_fast_charge == 0 && set_cable_status == CABLE_TYPE_AC))
 	{
 	  fsa9480_charger_cb( attached );
 	}
 	else
 	{
 #endif
+	pr_info("%s: force_fast_charge: %s\n", __func__, "dock USB");
 	struct usb_gadget *gadget = platform_get_drvdata(&s3c_device_usbgadget);
 
 	if (attached)
