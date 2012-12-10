@@ -35,7 +35,6 @@
 #ifdef CONFIG_FORCE_FAST_CHARGE
 #include <linux/fastchg.h>
 #endif
-
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
 #include <asm/setup.h>
@@ -125,7 +124,6 @@ EXPORT_SYMBOL(sec_set_param_value);
 
 void (*sec_get_param_value)(int idx, void *value);
 EXPORT_SYMBOL(sec_get_param_value);
-
 // local prototype
 static void fsa9480_charger_cb(bool attached);
 
@@ -316,20 +314,26 @@ static struct s3cfb_lcd s6e63m0 = {
 	},
 };
 
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (12288 * SZ_1K)
-// Disabled to save memory (we can't find where it's used)
-//#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC1 (9900 * SZ_1K)
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (12288 * SZ_1K)
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0 (14336 * SZ_1K)
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1 (21504 * SZ_1K)
+#ifdef CONFIG_S5P_BIGMEM
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (5000 * SZ_1K)
+//#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC1 (5000 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (5000 * SZ_1K)
+#else
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC0 (11264 * SZ_1K)
+//#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC1 (5000 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMC2 (11264 * SZ_1K)
+#endif
+//#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0 (32768 * SZ_1K)
+//#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1 (32768 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC0 (11264 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_MFC1 (11264 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_FIMD (S5PV210_LCD_WIDTH * \
 					     S5PV210_LCD_HEIGHT * 4 * \
 					     (CONFIG_FB_S3C_NR_BUFFERS + \
 						 (CONFIG_FB_S3C_NUM_OVLY_WIN * \
 						  CONFIG_FB_S3C_NUM_BUF_OVLY_WIN)))
-// Was 8M, but we're only using it to encode VGA jpegs
-#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_JPEG (4096 * SZ_1K)
-#define  S5PV210_ANDROID_PMEM_MEMSIZE_PMEM (5550 * SZ_1K)
+#define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_JPEG (4092 * SZ_1K)
+#define  S5PV210_ANDROID_PMEM_MEMSIZE_PMEM (2048 * SZ_1K)
 #define  S5PV210_ANDROID_PMEM_MEMSIZE_PMEM_GPU1 (3000 * SZ_1K)
 #define  S5PV210_ANDROID_PMEM_MEMSIZE_PMEM_ADSP (1500 * SZ_1K)
 #define  S5PV210_VIDEO_SAMSUNG_MEMSIZE_TEXTSTREAM (3000 * SZ_1K)
@@ -1313,7 +1317,6 @@ void touch_key_set_int_flt(unsigned long width)
 
 const unsigned long touch_int_flt_width = 0x2f;   // arbitrary value - max is 0x2f
 #endif
-
 static void touch_keypad_gpio_init(void)
 {
 	int ret = 0;
@@ -1321,7 +1324,6 @@ static void touch_keypad_gpio_init(void)
 	ret = gpio_request(_3_GPIO_TOUCH_EN, "TOUCH_EN");
 	if (ret)
 		printk(KERN_ERR "Failed to request gpio touch_en.\n");
-
 #ifdef CONFIG_SAMSUNG_FASCINATE
 	touch_key_set_int_flt(touch_int_flt_width);
 #endif
@@ -2507,6 +2509,7 @@ static void fsa9480_usb_cb(bool attached)
 	{
 	  fsa9480_charger_cb(attached);
 	}
+
 	else
 	{
 #endif
@@ -2579,7 +2582,6 @@ static void fsa9480_cardock_cb(bool attached)
 		switch_set_state(&switch_dock, 2);
 	else
 		switch_set_state(&switch_dock, 0);
-
 	set_cable_status = attached ? CABLE_TYPE_AC : CABLE_TYPE_NONE;
 	if (charger_callbacks && charger_callbacks->set_cable)
 		charger_callbacks->set_cable(charger_callbacks, set_cable_status);
@@ -2679,6 +2681,7 @@ static void gp2a_gpio_init(void)
 	int ret = gpio_request(GPIO_PS_ON, "gp2a_power_supply_on");
 	if (ret)
 		printk(KERN_ERR "Failed to request gpio gp2a power supply.\n");
+
 }
 
 static struct i2c_board_info i2c_devs11[] __initdata = {
@@ -4679,13 +4682,11 @@ void s3c_config_sleep_gpio(void)
 	// disable this for now.
 	return;
 #endif
-
 	/* setting the alive mode registers */
 #if defined(CONFIG_SAMSUNG_FASCINATE) || defined(CONFIG_SAMSUNG_CAPTIVATE)
 	s3c_gpio_cfgpin(S5PV210_GPH0(0), S3C_GPIO_INPUT);
 	s3c_gpio_setpull(S5PV210_GPH0(0), S3C_GPIO_PULL_DOWN);
 #endif
-
 	s3c_gpio_cfgpin(S5PV210_GPH0(1), S3C_GPIO_INPUT);
 #if defined(CONFIG_SAMSUNG_FASCINATE) || defined(CONFIG_SAMSUNG_CAPTIVATE)
 	s3c_gpio_setpull(S5PV210_GPH0(1), S3C_GPIO_PULL_DOWN);
@@ -4704,7 +4705,6 @@ void s3c_config_sleep_gpio(void)
 	s3c_gpio_cfgpin(S5PV210_GPH0(5), S3C_GPIO_OUTPUT);
 	s3c_gpio_setpull(S5PV210_GPH0(5), S3C_GPIO_PULL_NONE);
 	gpio_set_value(S5PV210_GPH0(5), 0);
-
 #if defined(CONFIG_SAMSUNG_FASCINATE) || defined(CONFIG_SAMSUNG_CAPTIVATE)
 	s3c_gpio_cfgpin(S5PV210_GPH0(7), S3C_GPIO_INPUT);
 	s3c_gpio_setpull(S5PV210_GPH0(7), S3C_GPIO_PULL_UP);
@@ -4780,7 +4780,6 @@ void s3c_config_sleep_gpio(void)
 #if !defined(CONFIG_SAMSUNG_FASCINATE)
 	s3c_gpio_cfgpin(S5PV210_GPH2(2), S3C_GPIO_INPUT);
 	s3c_gpio_setpull(S5PV210_GPH2(2), S3C_GPIO_PULL_DOWN);
-
 	s3c_gpio_cfgpin(S5PV210_GPH2(3), S3C_GPIO_INPUT);
 	s3c_gpio_setpull(S5PV210_GPH2(3), S3C_GPIO_PULL_DOWN);
 #endif
@@ -5157,6 +5156,12 @@ static struct platform_device *aries_devices[] __initdata = {
 	&s3c_device_i2c12, /* magnetic sensor */
 #if defined (CONFIG_SAMSUNG_CAPTIVATE)
 	&s3c_device_i2c13,
+#endif
+#if defined CONFIG_USB_S3C_OTG_HOST
+	&s3c_device_usb_otghcd,
+#endif
+#if defined CONFIG_USB_DWC_OTG
+	&s3c_device_usb_dwcotg,
 #endif
 #ifdef CONFIG_USB_GADGET
 	&s3c_device_usbgadget,
@@ -5667,6 +5672,48 @@ void usb_host_phy_off(void)
 			S5P_USB_PHY_CONTROL);
 }
 EXPORT_SYMBOL(usb_host_phy_off);
+
+#if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
+
+/* Initializes OTG Phy */
+void otg_host_phy_init(void) 
+{
+	__raw_writel(__raw_readl(S5P_USB_PHY_CONTROL)
+		|(0x1<<0), S5P_USB_PHY_CONTROL); /*USB PHY0 Enable */
+// from galaxy tab otg host:
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+		&~(0x3<<3)&~(0x1<<0))|(0x1<<5), S3C_USBOTG_PHYPWR);
+// from galaxy s2 otg host:
+//	__raw_writel((__raw_readl(S3C_USBOTG_PHYPWR)
+//        	&~(0x7<<3)&~(0x1<<0)), S3C_USBOTG_PHYPWR);
+
+	__raw_writel((__raw_readl(S3C_USBOTG_PHYCLK)
+		&~(0x1<<4))|(0x7<<0), S3C_USBOTG_PHYCLK);
+
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x3<<1))|(0x1<<0), S3C_USBOTG_RSTCON);
+	mdelay(1);
+	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
+		&~(0x7<<0)), S3C_USBOTG_RSTCON);
+	mdelay(1);
+
+	__raw_writel((__raw_readl(S3C_UDC_OTG_GUSBCFG)
+		|(0x3<<8)), S3C_UDC_OTG_GUSBCFG);
+
+//	smb136_set_otg_mode(1);
+
+	printk("otg_host_phy_int : USBPHYCTL=0x%x,PHYPWR=0x%x,PHYCLK=0x%x,USBCFG=0x%x\n", 
+		readl(S5P_USB_PHY_CONTROL), 
+		readl(S3C_USBOTG_PHYPWR),
+		readl(S3C_USBOTG_PHYCLK), 
+		readl(S3C_UDC_OTG_GUSBCFG)
+		);
+}
+EXPORT_SYMBOL(otg_host_phy_init);
+
+
+#endif
+
 #endif
 
 MACHINE_START(ARIES, "aries")
