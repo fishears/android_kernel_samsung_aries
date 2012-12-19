@@ -53,7 +53,6 @@ elif ! busybox test -e /system/build.prop ; then
 fi
 
 busybox umount /cache
-busybox umount /system
 busybox umount /sdcard
 busybox rmdir /sdcard
 
