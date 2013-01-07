@@ -34,7 +34,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
-static atomic_t active_count = ATOMIC_INIT(0);
+static int active_count;
 
 struct cpufreq_interactive_cpuinfo {
 	struct timer_list cpu_timer;
@@ -50,8 +50,8 @@ struct cpufreq_interactive_cpuinfo {
 	unsigned int floor_freq;
 	u64 floor_validate_time;
 	u64 hispeed_validate_time;
-	int governor_enabled;
 	struct rw_semaphore enable_sem;
+	int governor_enabled;
 };
 
 static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
@@ -60,6 +60,7 @@ static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
 static struct task_struct *speedchange_task;
 static cpumask_t speedchange_cpumask;
 static spinlock_t speedchange_cpumask_lock;
+static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
 static unsigned int hispeed_freq;
@@ -105,7 +106,6 @@ static u64 boostpulse_endtime;
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
  * minimum before wakeup to reduce speed, or -1 if unnecessary.
  */
-
 #define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
@@ -283,7 +283,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 	if (!down_read_trylock(&pcpu->enable_sem))
 		return;
-
 	if (!pcpu->governor_enabled)
 		goto exit;
 
@@ -309,7 +308,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 
 			if (new_freq < hispeed_freq)
 				new_freq = hispeed_freq;
-
 		}
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
@@ -484,7 +482,6 @@ static int cpufreq_interactive_speedchange_task(void *data)
 			pcpu = &per_cpu(cpuinfo, cpu);
 			if (!down_read_trylock(&pcpu->enable_sem))
 				continue;
-
 			if (!pcpu->governor_enabled) {
 				up_read(&pcpu->enable_sem);
 				continue;
@@ -505,6 +502,7 @@ static int cpufreq_interactive_speedchange_task(void *data)
 			trace_cpufreq_interactive_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
+
 			up_read(&pcpu->enable_sem);
 		}
 	}
@@ -863,6 +861,7 @@ static ssize_t store_boostpulse_duration(
 }
 
 define_one_global_rw(boostpulse_duration);
+
 static struct attribute *interactive_attributes[] = {
 	&target_loads_attr.attr,
 	&hispeed_freq_attr.attr,
@@ -901,6 +900,7 @@ static int cpufreq_interactive_idle_notifier(struct notifier_block *nb,
 static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
+
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event)
 {
@@ -914,6 +914,8 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		if (!cpu_online(policy->cpu))
 			return -EINVAL;
 
+		mutex_lock(&gov_lock);
+
 		freq_table =
 			cpufreq_frequency_get_table(policy->cpu);
 		if (!hispeed_freq)
@@ -921,6 +923,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 		for_each_cpu(j, policy->cpus) {
 			unsigned long expires;
+
 			pcpu = &per_cpu(cpuinfo, j);
 			pcpu->policy = policy;
 			pcpu->target_freq = policy->cur;
@@ -943,44 +946,49 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			up_write(&pcpu->enable_sem);
 		}
 
-
 		/*
 		 * Do not register the idle hook and create sysfs
 		 * entries if we have already done so.
 		 */
-		if (atomic_inc_return(&active_count) > 1)
+		if (++active_count > 1) {
+			mutex_unlock(&gov_lock);
 			return 0;
+		}
 
 		rc = sysfs_create_group(cpufreq_global_kobject,
 				&interactive_attr_group);
-		if (rc)
+		if (rc) {
+			mutex_unlock(&gov_lock);
 			return rc;
+		}
 
 		idle_notifier_register(&cpufreq_interactive_idle_nb);
 		cpufreq_register_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
-
 		break;
 
 	case CPUFREQ_GOV_STOP:
+		mutex_lock(&gov_lock);
 		for_each_cpu(j, policy->cpus) {
 			pcpu = &per_cpu(cpuinfo, j);
 			down_write(&pcpu->enable_sem);
 			pcpu->governor_enabled = 0;
 			del_timer_sync(&pcpu->cpu_timer);
-
 			del_timer_sync(&pcpu->cpu_slack_timer);
 			up_write(&pcpu->enable_sem);
 		}
 
-		if (atomic_dec_return(&active_count) > 0)
+		if (--active_count > 0) {
+			mutex_unlock(&gov_lock);
 			return 0;
+		}
 
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		idle_notifier_unregister(&cpufreq_interactive_idle_nb);
 		sysfs_remove_group(cpufreq_global_kobject,
 				&interactive_attr_group);
+		mutex_unlock(&gov_lock);
 
 		break;
 
@@ -1006,7 +1014,6 @@ static int __init cpufreq_interactive_init(void)
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
-
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
@@ -1021,6 +1028,7 @@ static int __init cpufreq_interactive_init(void)
 
 	spin_lock_init(&target_loads_lock);
 	spin_lock_init(&speedchange_cpumask_lock);
+	mutex_init(&gov_lock);
 	speedchange_task =
 		kthread_create(cpufreq_interactive_speedchange_task, NULL,
 			       "cfinteractive");
