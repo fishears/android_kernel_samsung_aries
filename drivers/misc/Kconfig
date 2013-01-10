@@ -596,6 +596,12 @@ config CUSTOM_VOLTAGE
 	default y
 	help
 	  Say Y here to enable Custom Voltage
+	  
+config LIVE_OC
+	bool "Support for Live OC"
+	default n
+	help
+	  Say Y here to enable Live OC
 
 config GENERIC_BLN
        bool "Generic BLN support for backlight notification"
