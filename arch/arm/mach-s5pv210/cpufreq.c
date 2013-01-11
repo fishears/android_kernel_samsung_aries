@@ -1114,8 +1114,6 @@ static struct platform_driver s5pv210_cpufreq_drv = {
 static int __init s5pv210_cpufreq_init(void)
 {
 	int ret;
-	register_early_suspend(&_powersave_early_suspend);
-    	
 	ret = platform_driver_register(&s5pv210_cpufreq_drv);
 	if (!ret)
 		pr_info("%s: S5PV210 cpu-freq driver\n", __func__);
