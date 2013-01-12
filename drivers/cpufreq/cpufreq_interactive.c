@@ -965,6 +965,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		idle_notifier_register(&cpufreq_interactive_idle_nb);
 		cpufreq_register_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
+		mutex_unlock(&gov_lock);
 		break;
 
 	case CPUFREQ_GOV_STOP:
