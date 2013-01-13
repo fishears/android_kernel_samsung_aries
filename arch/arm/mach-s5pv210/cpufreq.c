@@ -198,8 +198,6 @@ static bool pllbus_changing = false;
 extern int get_oc_value(void); 
 extern unsigned long get_oc_low_freq(void);
 extern unsigned long get_oc_high_freq(void);
-static unsigned long user_max = 1000000;
-static unsigned long user_min = 100000;
 static unsigned long sleep_freq;
 
 static unsigned long original_fclk[] = {1400000, 1300000, 1200000, 1100000, 1000000, 800000, 800000, 800000, 800000};
@@ -269,8 +267,6 @@ unsigned int s5pv210_getspeed(unsigned int cpu)
 #ifdef CONFIG_DVFS_LIMIT
 void s5pv210_lock_dvfs_high_level(uint nToken, uint perf_level)
 {
-	//printk(KERN_DEBUG "%s : lock with token(%d) level(%d) current(%X)\n",
-	//		__func__, nToken, perf_level, g_dvfs_high_lock_token);
 
 	if (g_dvfs_high_lock_token & (1 << nToken))
 		return;
@@ -315,14 +311,11 @@ void s5pv210_unlock_dvfs_high_level(unsigned int nToken)
 	}
 
 	//mutex_unlock(&dvfs_high_lock);
-
-	//printk(KERN_DEBUG "%s : unlock with token(%d) current(%X) level(%d)\n",
-	//		__func__, nToken, g_dvfs_high_lock_token, g_dvfs_high_lock_limit);
-
-	/* Reevaluate cpufreq policy with the effect of calling the governor with a
-	 * CPUFREQ_GOV_LIMITS event, so that the governor sets its preferred
-	 * frequency with the new (or no) DVFS limit. */
-	cpufreq_update_policy(0);
+	
+/* Reevaluate cpufreq policy with the effect of calling the governor with a
+* CPUFREQ_GOV_LIMITS event, so that the governor sets its preferred
+* frequency with the new (or no) DVFS limit. */
+cpufreq_update_policy(0);
 }
 EXPORT_SYMBOL(s5pv210_unlock_dvfs_high_level);
 #endif
@@ -394,9 +387,6 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 	}
 
 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
-
-	/* Don't use cpufreq_frequency_table_target() any more as it */
-	/* may not be accurate. Compare against freqs.old instead */
 
 	/* Check if there need to change PLL */ 
 	if((apll_old != apll_values[index]) || (index <= L4) || 
@@ -550,7 +540,6 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 			break;
 		default:
 			__raw_writel(APLL_VAL_800, S5P_APLL_CON);
-			break;
 		}
 #endif
 		do {
@@ -622,8 +611,7 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 		} while (reg & (1 << 15));
 
 		/* Reconfigure DRAM refresh counter value */
-		//if (index != L8) {
-		  if ((original_fclk[index] / (clkdiv_val[index][0] + 1)) / (clkdiv_val[index][2] + 1) != 100000){
+		if ((original_fclk[index] / (clkdiv_val[index][0] + 1)) / (clkdiv_val[index][2] + 1) != 100000){
 			/*
 			 * DMC0 : 166Mhz
 			 * DMC1 : 200Mhz
