@@ -36,7 +36,7 @@
 #define LULZACTIVE_AUTHOR	"tegrak"
 
 // if you changed some codes for optimization, just write your name here.
-#define LULZACTIVE_TUNER "KasperHettinga"
+#define LULZACTIVE_TUNER "fishears"
 
 #define LOGI(fmt...) printk(KERN_INFO "[lulzactive] " fmt)
 #define LOGW(fmt...) printk(KERN_WARNING "[lulzactive] " fmt)
@@ -84,7 +84,7 @@ static spinlock_t down_cpumask_lock;
 /*
  * The minimum amount of time to spend at a frequency before we can step up.
  */
-#define DEFAULT_UP_SAMPLE_TIME 25000
+#define DEFAULT_UP_SAMPLE_TIME 20000
 static unsigned long up_sample_time;
 
 #define DEFAULT_UP_SAMPLE_TIME_SLEEP 50000
@@ -115,7 +115,7 @@ enum {
 /*
  * CPU freq will be increased if measured load > inc_cpu_load;
  */
-#define DEFAULT_INC_CPU_LOAD 80
+#define DEFAULT_INC_CPU_LOAD 70
 static unsigned long inc_cpu_load;
 
 #define DEFAULT_INC_CPU_LOAD_SLEEP 95
@@ -140,7 +140,7 @@ static unsigned long pump_up_step;
  * Decreasing frequency table index
  * zero disables and will calculate frequency according to load heuristic.
  */
-#define DEFAULT_PUMP_DOWN_STEP 2
+#define DEFAULT_PUMP_DOWN_STEP 1
 static unsigned long pump_down_step;
 
 /*
@@ -150,7 +150,8 @@ static unsigned int suspending;
 static unsigned int early_suspended;
 
 #define SCREEN_OFF_LOWEST_STEP 		(0xffffffff)
-#define DEFAULT_SCREEN_OFF_MIN_STEP	(SCREEN_OFF_LOWEST_STEP)
+//#define DEFAULT_SCREEN_OFF_MIN_STEP	(SCREEN_OFF_LOWEST_STEP)
+#define DEFAULT_SCREEN_OFF_MIN_STEP	-4
 static unsigned long screen_off_min_step;
 
 #define DEBUG 0
