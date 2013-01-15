@@ -43,7 +43,6 @@ extern unsigned long cpuL4freq(void);
 extern unsigned long cpuL5freq(void);
 extern unsigned long cpuL6freq(void);
 extern unsigned long cpuL7freq(void);
-extern unsigned long cpuL8freq(void);
 #endif
 
 /******************** Tunable parameters: ********************/
@@ -522,15 +521,15 @@ static ssize_t store_sleep_ideal_freq(struct kobject *kobj, struct attribute *at
 	res = strict_strtoul(buf, 0, &input);
 	if (res >= 0 && input >= 0) {
 #ifdef CONFIG_LIVE_OC
-	if(input > 0 && input <= cpuL8freq())
-	    sleep_ideal_freq = cpuL8freq();
-	else if(input > cpuL8freq() && input <= cpuL7freq())
+	if(input > 0 && input <= cpuL7freq())
 	    sleep_ideal_freq = cpuL7freq();
 	else if(input > cpuL7freq() && input <= cpuL6freq())
 	    sleep_ideal_freq = cpuL6freq();
 	else if(input > cpuL6freq() && input <= cpuL5freq())
 	    sleep_ideal_freq = cpuL5freq();
-	else    sleep_ideal_freq = cpuL7freq();
+	else if(input > cpuL5freq() && input <= cpuL4freq())
+	    sleep_ideal_freq = cpuL4freq();
+	else    sleep_ideal_freq = cpuL6freq();
 #else
 		sleep_ideal_freq = input;
 #endif
@@ -552,7 +551,9 @@ static ssize_t store_sleep_wakeup_freq(struct kobject *kobj, struct attribute *a
 	res = strict_strtoul(buf, 0, &input);
 	if (res >= 0 && input >= 0)
 #ifdef CONFIG_LIVE_OC
-	if(input > cpuL3freq())
+	if(input > cpuL2freq())
+	    sleep_wakeup_freq = cpuL1freq();
+	else if(input > cpuL3freq() && input <= cpuL2freq())
 	    sleep_wakeup_freq = cpuL2freq();
 	else if(input > cpuL4freq() && input <= cpuL3freq())
 	    sleep_wakeup_freq = cpuL3freq();
@@ -562,10 +563,8 @@ static ssize_t store_sleep_wakeup_freq(struct kobject *kobj, struct attribute *a
 	    sleep_wakeup_freq = cpuL5freq();
 	else if(input > cpuL7freq() && input <= cpuL6freq())
 	    sleep_wakeup_freq = cpuL6freq();
-	else if(input > cpuL8freq() && input <= cpuL7freq())
-	    sleep_wakeup_freq = cpuL7freq();
 	else
-	    sleep_wakeup_freq = cpuL6freq();
+	    sleep_wakeup_freq = cpuL5freq();
 #else
 	    sleep_wakeup_freq = input;
 #endif
@@ -584,7 +583,9 @@ static ssize_t store_awake_ideal_freq(struct kobject *kobj, struct attribute *at
 	res = strict_strtoul(buf, 0, &input);
 	if (res >= 0 && input >= 0) {
 #ifdef CONFIG_LIVE_OC
-	if(input > cpuL3freq())
+	if(input > cpuL2freq())
+	    awake_ideal_freq = cpuL1freq();
+	else if(input > cpuL3freq() && input <= cpuL2freq())
 	    awake_ideal_freq = cpuL2freq();
 	else if(input > cpuL4freq() && input <= cpuL3freq())
 	    awake_ideal_freq = cpuL3freq();
@@ -592,12 +593,10 @@ static ssize_t store_awake_ideal_freq(struct kobject *kobj, struct attribute *at
 	    awake_ideal_freq = cpuL4freq();
 	else if(input > cpuL6freq() && input <= cpuL5freq())
 	    awake_ideal_freq = cpuL5freq();
-	else if(input > cpuL7freq() && input <= cpuL7freq())
+	else if(input > cpuL7freq() && input <= cpuL6freq())
 	    awake_ideal_freq = cpuL6freq();
-	else if(input > cpuL8freq() && input <= cpuL7freq())
-	    awake_ideal_freq = cpuL7freq();
 	else
-	    awake_ideal_freq = cpuL6freq();
+	    awake_ideal_freq = cpuL5freq();
 #else
 	    awake_ideal_freq = input;
 #endif
@@ -860,7 +859,7 @@ static int __init cpufreq_smartass_init(void)
 	struct smartass_info_s *this_smartass;
 #ifdef CONFIG_LIVE_OC
 	unsigned long low_freq;
-	low_freq = cpuL8freq();
+	low_freq = cpuL7freq();
 #endif
 	debug_mask = 0;
 	up_rate_us = DEFAULT_UP_RATE_US;
