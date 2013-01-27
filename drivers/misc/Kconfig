@@ -610,4 +610,10 @@ config TOUCH_WAKE
   help
     Say Y here to enable Touch Wake
 
+config BLD
+       bool "Support for Backlight Dimmer"
+       default y
+       help
+         Say Y here to enable Backlight Dimmer
+
 endif # MISC_DEVICES

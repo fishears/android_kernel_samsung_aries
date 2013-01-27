@@ -21,6 +21,10 @@
 #include <linux/bln.h>
 #endif
 
+#ifdef CONFIG_BLD
+#include <linux/bld.h>
+#endif
+
 static int led_gpios[] = { 2, 3, 6, 7 };
 
 static void aries_touchkey_led_onoff(int onoff)
@@ -46,6 +50,24 @@ static struct bln_implementation aries_touchkey_bln = {
   .enable = aries_touchkey_bln_enable,
   .disable = aries_touchkey_bln_disable,
 };
+#endif
+
+#ifdef CONFIG_BLD
+static void aries_touchkey_bld_enable(void)
+{
+    aries_touchkey_led_onoff(1);
+}
+
+static void aries_touchkey_bld_disable(void)
+{
+    aries_touchkey_led_onoff(0);
+}
+
+static struct bld_implementation aries_touchkey_bld = 
+    {
+  .enable = aries_touchkey_bld_enable,
+  .disable = aries_touchkey_bld_disable,
+    };
 #endif
 
 static void aries_touchkey_led_early_suspend(struct early_suspend *h)
@@ -106,6 +128,9 @@ static int __init aries_init_touchkey_led(void)
     register_bln_implementation(&aries_touchkey_bln);
 #endif
 
+#ifdef CONFIG_BLD
+  register_bld_implementation(&aries_touchkey_bld);
+#endif
 	return 0;
 
 err_req:
