@@ -260,7 +260,10 @@ static ssize_t proximity_enable_store(struct device *dev,
 		pr_err("%s: invalid value %d\n", __func__, *buf);
 		return -EINVAL;
 	}
-
+#ifdef CONFIG_TOUCH_WAKE
+	if (!new_value)
+	  proximity_off();
+#endif
 	mutex_lock(&gp2a->power_lock);
 	gp2a_dbgmsg("new_value = %d, old state = %d\n",
 		    new_value, (gp2a->power_state & PROXIMITY_ENABLED) ? 1 : 0);
