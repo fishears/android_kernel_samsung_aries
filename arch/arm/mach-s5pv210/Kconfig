@@ -370,5 +370,5 @@ config FORCE_FAST_CHARGE
        help
          A simple sysfs interface to force adapters that
          are detected as USB to charge as AC.
-         
+	
 endif
