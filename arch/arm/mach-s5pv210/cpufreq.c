@@ -27,17 +27,12 @@
 #include <mach/regs-clock.h>
 #include <mach/cpu-freq-v210.h>
 #include <mach/voltages.h>
-#include <linux/earlysuspend.h>
 
 static struct clk *cpu_clk;
 static struct clk *dmc0_clk;
 static struct clk *dmc1_clk;
 static struct cpufreq_freqs freqs;
 static DEFINE_MUTEX(set_freq_lock);
-
-bool bus_limit_enable = false;
-bool bus_limit_automatic = false;
-static int bus_limit = 0;
 
 /* APLL M,P,S values for 1.4G/1.3G/1.2G/1.1G/1G/800Mhz */
 #define APLL_VAL_1400   ((1 << 31) | (175 << 16) | (3 << 8) | 1)
@@ -123,39 +118,39 @@ const unsigned long int_volt_max = 1300000;
 #endif
 
 static struct s5pv210_dvs_conf dvs_conf[] = {
-	[OC0] = {
+	[OC0] = { //1400
 		.arm_volt   = DVSARM1,
 		.int_volt   = DVSINT1,
 	},
-	[OC1] = {
+	[OC1] = { //1300
 		.arm_volt   = DVSARM2,
 		.int_volt   = DVSINT2,
 	},
-	[OC2] = {
+	[OC2] = { //1200
 		.arm_volt   = DVSARM3,
 		.int_volt   = DVSINT3,
 	},
-	[OC3] = {
+	[OC3] = { //1100
 		.arm_volt   = DVSARM3,
 		.int_volt   = DVSINT3,
 	},
-	[L0] = {
+	[L0] = { //1000
 		.arm_volt   = DVSARM4,
 		.int_volt   = DVSINT4,
 	},
-	[L1] = {
+	[L1] = { //800
 		.arm_volt   = DVSARM5,
 		.int_volt   = DVSINT5,
 	},
-	[L2] = {
+	[L2] = { //400
 		.arm_volt   = DVSARM6,
 		.int_volt   = DVSINT5,
 	},
-	[L3] = {
+	[L3] = { //200
 		.arm_volt   = DVSARM7,
 		.int_volt   = DVSINT5,
 	},
-	[L4] = {
+	[L4] = { //100
 		.arm_volt   = DVSARM8,
 		.int_volt   = DVSINT6,
 	},
@@ -204,8 +199,6 @@ static bool pllbus_changing = false;
 extern int get_oc_value(void); 
 extern unsigned long get_oc_low_freq(void);
 extern unsigned long get_oc_high_freq(void);
-static unsigned long user_max = 1000000;
-static unsigned long user_min = 100000;
 static unsigned long sleep_freq;
 
 static unsigned long original_fclk[] = {1400000, 1300000, 1200000, 1100000, 1000000, 800000, 800000, 800000, 800000};
@@ -549,7 +542,6 @@ static int s5pv210_target(struct cpufreq_policy *policy,
 			break;
 		default:
 			__raw_writel(APLL_VAL_800, S5P_APLL_CON);
-			break;
 		}
 #endif
 		do {
@@ -918,7 +910,7 @@ EXPORT_SYMBOL(cpuL4freq);
 
 #endif
 
-static int __init s5pv210_cpu_init(struct cpufreq_policy *policy)
+static int s5pv210_cpu_init(struct cpufreq_policy *policy)
 {
 	unsigned long mem_type;
 	int ret;
