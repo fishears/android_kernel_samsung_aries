@@ -47,9 +47,6 @@ extern unsigned long cpuL3freq(void);
 extern unsigned long cpuL4freq(void);
 #endif
 
-extern unsigned long get_cpuL1freq(void);
-extern unsigned long get_cpuminfreq(void);
-
 /******************** Tunable parameters: ********************/
 /*
  * The "ideal" frequency to use when awake. The governor will ramp up faster
@@ -865,7 +862,6 @@ static struct early_suspend smartass_power_suspend = {
 static int __init cpufreq_smartass_init(void)
 {
 	unsigned int i;
-	unsigned long min_freq;
 	struct smartass_info_s *this_smartass;
 #ifdef CONFIG_LIVE_OC
 	unsigned long low_freq;
