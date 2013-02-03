@@ -206,7 +206,6 @@ static unsigned long original_fclk[] = {1400000, 1300000, 1200000, 1100000, 1000
 static u32 apll_values[sizeof(original_fclk) / sizeof(unsigned long)];
 static int apll_old;
 static int bus_speed_old;
-int early_suspend = -1;
 #endif
 
 /*
