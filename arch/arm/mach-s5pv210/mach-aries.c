@@ -2608,6 +2608,10 @@ static void fsa9480_deskdock_cb(bool attached)
 	if (( force_fast_charge != 0 && set_cable_status != CABLE_TYPE_USB) || (force_fast_charge == 0 && set_cable_status == CABLE_TYPE_AC))
 	{
 	  fsa9480_charger_cb( attached );
+	    if (attached)
+		switch_set_state(&switch_dock, 1);
+	    else
+		switch_set_state(&switch_dock, 0);
 	}
 	else
 	{
