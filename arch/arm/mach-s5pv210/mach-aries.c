@@ -5709,6 +5709,7 @@ void usb_host_phy_off(void)
 			S5P_USB_PHY_CONTROL);
 }
 EXPORT_SYMBOL(usb_host_phy_off);
+
 #if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
 
 /* Initializes OTG Phy */
@@ -5728,10 +5729,10 @@ void otg_host_phy_init(void)
 
 	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
 		&~(0x3<<1))|(0x1<<0), S3C_USBOTG_RSTCON);
-	mdelay(1);
+	msleep(1);
 	__raw_writel((__raw_readl(S3C_USBOTG_RSTCON)
 		&~(0x7<<0)), S3C_USBOTG_RSTCON);
-	mdelay(1);
+	msleep(1);
 
 	__raw_writel((__raw_readl(S3C_UDC_OTG_GUSBCFG)
 		|(0x3<<8)), S3C_UDC_OTG_GUSBCFG);
@@ -5749,6 +5750,7 @@ EXPORT_SYMBOL(otg_host_phy_init);
 
 
 #endif
+
 #endif
 
 MACHINE_START(ARIES, "aries")
