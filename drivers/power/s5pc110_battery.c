@@ -36,15 +36,7 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 #include <mach/battery.h>
-
-#ifdef CONFIG_MACH_HERRING
 #include <mach/gpio-herring.h>
-#endif
-
-#ifdef CONFIG_MACH_ARIES
-#include <mach/gpio-aries.h>
-#endif
-
 #include <mach/hardware.h>
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -55,11 +47,7 @@
 #include "s5pc110_battery.h"
 #include <linux/mfd/max8998.h>
 
-#ifdef CONFIG_BLX
-#include <linux/blx.h>
-#endif
-
-#define POLLING_INTERVAL	10000
+#define POLLING_INTERVAL	1000
 #define ADC_TOTAL_COUNT		10
 #define ADC_DATA_ARR_SIZE	6
 
@@ -86,17 +74,10 @@
 #define ATTACH_USB	1
 #define ATTACH_TA	2
 
-#if defined (CONFIG_SAMSUNG_GALAXYS) || defined (CONFIG_SAMSUNG_GALAXYSB) || defined(CONFIG_SAMSUNG_CAPTIVATE)
-  #define HIGH_BLOCK_TEMP               630
-  #define HIGH_RECOVER_TEMP             580
-  #define LOW_BLOCK_TEMP               (-40)
-  #define LOW_RECOVER_TEMP               10
-#else
-  #define HIGH_BLOCK_TEMP		500
-  #define HIGH_RECOVER_TEMP		420
-  #define LOW_BLOCK_TEMP		  0
-  #define LOW_RECOVER_TEMP		 20
-#endif
+#define HIGH_BLOCK_TEMP			500
+#define HIGH_RECOVER_TEMP		420
+#define LOW_BLOCK_TEMP			0
+#define LOW_RECOVER_TEMP		20
 
 struct battery_info {
 	u32 batt_temp;		/* Battery Temperature (C) from ADC */
@@ -147,7 +128,7 @@ struct chg_data {
 	struct max8998_charger_callbacks callbacks;
 };
 
-static bool lpm_charging_mode;
+static bool disable_charger;
 
 static char *supply_list[] = {
 	"battery",
@@ -182,10 +163,19 @@ static ssize_t s3c_bat_store_attrs(struct device *dev, struct device_attribute *
 }
 
 static struct device_attribute s3c_battery_attrs[] = {
-	SEC_BATTERY_ATTR(charging_mode_booting),
-	SEC_BATTERY_ATTR(batt_temp_check),
-	SEC_BATTERY_ATTR(batt_full_check),
+	SEC_BATTERY_ATTR(disable_charger)
 };
+
+static void max8998_set_cable(struct max8998_charger_callbacks *ptr,
+	enum cable_type_t status)
+{
+	struct chg_data *chg = container_of(ptr, struct chg_data, callbacks);
+	chg->cable_status = status;
+	power_supply_changed(&chg->psy_ac);
+	power_supply_changed(&chg->psy_usb);
+	wake_lock(&chg->work_wake_lock);
+	queue_work(chg->monitor_wqueue, &chg->bat_work);
+}
 
 static bool max8998_check_vdcin(struct chg_data *chg)
 {
@@ -201,42 +191,6 @@ static bool max8998_check_vdcin(struct chg_data *chg)
 
 	return data & MAX8998_MASK_VDCIN;
 }
-
-static void max8998_set_cable(struct max8998_charger_callbacks *ptr,
-	enum cable_type_t status)
-{
-	struct chg_data *chg = container_of(ptr, struct chg_data, callbacks);
-	chg->cable_status = status;
-
-	if (lpm_charging_mode &&
-	    (max8998_check_vdcin(chg) != 1) &&
-	    pm_power_off)
-		pm_power_off();
-
-	power_supply_changed(&chg->psy_ac);
-	power_supply_changed(&chg->psy_usb);
-	wake_lock(&chg->work_wake_lock);
-	queue_work(chg->monitor_wqueue, &chg->bat_work);
-}
-
-static void check_lpm_charging_mode(struct chg_data *chg)
-{
-	if (readl(S5P_INFORM5)) {
-		lpm_charging_mode = 1;
-		if (max8998_check_vdcin(chg) != 1)
-			if (pm_power_off)
-				pm_power_off();
-	} else
-		lpm_charging_mode = 0;
-
-	pr_info("%s : lpm_charging_mode(%d)\n", __func__, lpm_charging_mode);
-}
-
-bool charging_mode_get(void)
-{
-	return lpm_charging_mode;
-}
-EXPORT_SYMBOL(charging_mode_get);
 
 static int s3c_bat_get_property(struct power_supply *bat_ps,
 				enum power_supply_property psp,
@@ -264,7 +218,8 @@ static int s3c_bat_get_property(struct power_supply *bat_ps,
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 	case POWER_SUPPLY_PROP_CAPACITY:
-		if (chg->pdata && chg->pdata->psy_fuelgauge &&
+		if (chg->pdata &&
+			 chg->pdata->psy_fuelgauge &&
 			 chg->pdata->psy_fuelgauge->get_property &&
 			 chg->pdata->psy_fuelgauge->get_property(
 				chg->pdata->psy_fuelgauge, psp, val) < 0)
@@ -305,8 +260,7 @@ static int s3c_ac_get_property(struct power_supply *ps,
 		return -EINVAL;
 
 	/* Set enable=1 only if the AC charger is connected */
-	val->intval = ((chg->cable_status == CABLE_TYPE_AC) &&
-			max8998_check_vdcin(chg));
+	val->intval = (chg->cable_status == CABLE_TYPE_AC);
 
 	return 0;
 }
@@ -476,15 +430,6 @@ static void s3c_bat_discharge_reason(struct chg_data *chg)
 	if (chg->set_batt_full)
 		chg->bat_info.dis_reason |= DISCONNECT_BAT_FULL;
 
-#ifdef CONFIG_BLX
-	if (get_charginglimit() != MAX_CHARGINGLIMIT && chg->bat_info.batt_soc >= get_charginglimit())
-	    {
-		chg->bat_info.dis_reason |= DISCONNECT_BAT_FULL;
-
-		chg->bat_info.batt_is_full = true;
-	    }
-#endif
-
 	if (chg->bat_info.batt_health != POWER_SUPPLY_HEALTH_GOOD)
 		chg->bat_info.dis_reason |= chg->bat_info.batt_health ==
 			POWER_SUPPLY_HEALTH_OVERHEAT ?
@@ -567,7 +512,7 @@ static int s3c_cable_status_update(struct chg_data *chg)
 	/* if max8998 has detected vdcin */
 	if (max8998_check_vdcin(chg)) {
 		vdc_status = 1;
-		if (chg->bat_info.dis_reason) {
+		if (chg->bat_info.dis_reason || disable_charger) {
 			pr_info("%s : battery status discharging : %d\n",
 				__func__, chg->bat_info.dis_reason);
 			/* have vdcin, but cannot charge */
@@ -616,9 +561,6 @@ static int s3c_cable_status_update(struct chg_data *chg)
 		chg->set_batt_full = 0;
 		chg->bat_info.dis_reason = 0;
 		chg->discharging_time = 0;
-
-		if (lpm_charging_mode && pm_power_off)
-			pm_power_off();
 	}
 
 update:
@@ -687,7 +629,6 @@ static void s3c_battery_alarm(struct alarm *alarm)
 	queue_work(chg->monitor_wqueue, &chg->bat_work);
 }
 
-
 static ssize_t s3c_bat_show_attrs(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
@@ -698,14 +639,8 @@ static ssize_t s3c_bat_show_attrs(struct device *dev,
 	union power_supply_propval value;
 
 	switch (off) {
-	case CHARGING_MODE_BOOTING:
-		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", lpm_charging_mode);
-		break;
-	case BATT_TEMP_CHECK:
-		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", chg->bat_info.batt_health);
-		break;
-	case BATT_FULL_CHECK:
-		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", chg->bat_info.batt_is_full);
+	case DISABLE_CHARGER:
+		i += scnprintf(buf + i, PAGE_SIZE - i, "%d\n", disable_charger);
 		break;
 	default:
 		i = -EINVAL;
@@ -724,12 +659,13 @@ static ssize_t s3c_bat_store_attrs(struct device *dev, struct device_attribute *
 	const ptrdiff_t off = attr - s3c_battery_attrs;
 
 	switch (off) {
-	case CHARGING_MODE_BOOTING:
+	case DISABLE_CHARGER:
 		if (sscanf(buf, "%d\n", &x) == 1) {
-			lpm_charging_mode = x;
+			disable_charger = x;
 			ret = count;
 		}
 		break;
+
 	default:
 		ret = -EINVAL;
 	}
@@ -902,7 +838,7 @@ static __devinit int max8998_charger_probe(struct platform_device *pdev)
 	alarm_init(&chg->alarm, ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
 		s3c_battery_alarm);
 
-	check_lpm_charging_mode(chg);
+	disable_charger = 0;
 
 	/* init power supplier framework */
 	ret = power_supply_register(&pdev->dev, &chg->psy_bat);

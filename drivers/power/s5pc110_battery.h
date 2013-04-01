@@ -65,6 +65,10 @@ enum {
 };
 
 enum {
+	DISABLE_CHARGER,
+};
+
+enum {
     CHARGING_MODE_BOOTING,
     BATT_TEMP_CHECK,
     BATT_FULL_CHECK,
