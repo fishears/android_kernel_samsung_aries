@@ -65,13 +65,10 @@ enum {
 };
 
 enum {
-	DISABLE_CHARGER,
-};
-
-enum {
     CHARGING_MODE_BOOTING,
     BATT_TEMP_CHECK,
     BATT_FULL_CHECK,
+    DISABLE_CHARGER,
 };
 
 #define TOTAL_CHARGING_TIME	(6*60*60)	/* 6 hours */

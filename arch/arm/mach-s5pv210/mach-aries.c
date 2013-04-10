@@ -5623,10 +5623,10 @@ void otg_phy_init(void)
 			S3C_USBOTG_PHYCLK);
 	writel((readl(S3C_USBOTG_RSTCON) & ~(0x3<<1)) | (0x1<<0),
 			S3C_USBOTG_RSTCON);
-	mdelay(1);
+	msleep(1);
 	writel(readl(S3C_USBOTG_RSTCON) & ~(0x7<<0),
 			S3C_USBOTG_RSTCON);
-	mdelay(1);
+	msleep(1);
 
 	/* rising/falling time */
 	writel(readl(S3C_USBOTG_PHYTUNE) | (0x1<<20),

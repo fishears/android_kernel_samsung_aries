@@ -434,12 +434,13 @@ static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw)
 		/* USB */
 		if (usbsw->dev1 & DEV_T1_USB_MASK ||
 				usbsw->dev2 & DEV_T2_USB_MASK) {
-			if (pdata->usb_cb)
+			if (pdata->usb_cb) {
 				pdata->usb_cb(FSA9480_DETACHED);
 #if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
                                // sztupy: also switch off otg host mode
                                set_otghost_mode(0);
 #endif
+			}
 		/* UART */
 		} else if (usbsw->dev1 & DEV_T1_UART_MASK ||
 				usbsw->dev2 & DEV_T2_UART_MASK) {
