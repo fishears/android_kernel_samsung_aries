@@ -83,7 +83,10 @@ enum {
 	CSS_ROOT, /* This CSS is the root of the subsystem */
 	CSS_REMOVED, /* This CSS is dead */
 };
-
+static inline void __css_get(struct cgroup_subsys_state *css, int count)
+{
+        atomic_add(count, &css->refcnt);
+}
 /*
  * Call css_get() to hold a reference on the css; it can be used
  * for a reference obtained via:
