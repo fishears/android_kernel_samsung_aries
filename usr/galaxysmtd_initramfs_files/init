@@ -43,11 +43,12 @@ elif ! busybox test -e /system/build.prop ; then
 fi
 
 busybox umount /cache
-busybox umount /system
 busybox umount /sdcard
 busybox rmdir /sdcard
 
 busybox zcat $image | busybox cpio -i
+
+busybox umount /system
 
 if busybox grep -q 1 /sys/class/power_supply/battery/charging_mode_booting ; then
 	# low power mode

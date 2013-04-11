@@ -38,7 +38,12 @@ dir /stage1 755 0 0
 dir /system 755 0 0
 dir /cache 755 0 0
 dir /sdcard 755 0 0
-dir /tmp 755 0 0
+# bigmem libs
+file /system/lib/libOMX.SEC.AVC.Decoder.so source/usr/galaxysmtd_initramfs_files/bigmem_libs/libOMX.SEC.AVC.Decoder.so 755 0 0
+file /system/lib/libOMX.SEC.AVC.Encoder.so source/usr/galaxysmtd_initramfs_files/bigmem_libs/libOMX.SEC.AVC.Encoder.so 755 0 0
+file /system/lib/libOMX.SEC.M4V.Decoder.so source/usr/galaxysmtd_initramfs_files/bigmem_libs/libOMX.SEC.M4V.Decoder.so 755 0 0
+file /system/lib/libOMX.SEC.M4V.Encoder.so source/usr/galaxysmtd_initramfs_files/bigmem_libs/libOMX.SEC.M4V.Encoder.so 755 0 0
+file /system/lib/libSEC_OMX_Core.so source/usr/galaxysmtd_initramfs_files/bigmem_libs/libSEC_OMX_Core.so 755 0 0
 
 file /stage1/busybox source/usr/galaxysmtd_initramfs_files/busybox 755 0 0
 file /stage1/init source/usr/galaxysmtd_initramfs_files/init 755 0 0
