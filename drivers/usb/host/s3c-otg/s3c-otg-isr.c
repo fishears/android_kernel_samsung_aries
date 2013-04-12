@@ -42,7 +42,7 @@
  *
  */
 
-void otg_handle_interrupt(struct usb_hcd *hcd)
+__inline__ void otg_handle_interrupt(struct usb_hcd *hcd)
 {
 	gintsts_t clearIntr = {.d32 = 0};
 	gintsts_t gintsts = {.d32 = 0};

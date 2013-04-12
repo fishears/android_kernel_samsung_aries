@@ -238,11 +238,10 @@ int oci_host_init(struct sec_otghost *otghost)
 	update_reg_32(GINTMSK,gintmsk.d32);
 
 	if (!otghost->is_hs) {
-    		hcfg.b.fslssupp = 1; // force USB 1.x mode
-  	} else {
-    		hcfg.b.fslssupp = 0;
-  	}	
-	
+		hcfg.b.fslssupp = 1; // force USB 1.x mode
+	} else {
+		hcfg.b.fslssupp = 0;
+	}
 	hcfg.b.fslspclksel = HCFG_30_60_MHZ;
 	update_reg_32(HCFG, hcfg.d32);
 
@@ -457,9 +456,9 @@ int oci_channel_init( u8 ch_num, stransfer_t *st_t)
 {
 	u32 		intr_enable = 0;
 	gintmsk_t	gintmsk = {.d32 = 0};
-	hcchar_t	hcchar = {.d32 = 0};
-	hctsiz_t	hctsiz = {.d32 = 0};
-	hcsplt_t  	hcsplt = {.d32 = 0};
+	hcchar_t		hcchar = {.d32 = 0};
+	hctsiz_t		hctsiz = {.d32 = 0};
+	hcsplt_t	hcsplt = {.d32 = 0};
 
 	otg_dbg(OTG_DBG_OCI, "oci_channel_init \n");
 
@@ -550,17 +549,17 @@ int oci_channel_init( u8 ch_num, stransfer_t *st_t)
 	/* Wrote HCCHAR Register */
 	write_reg_32(HCCHAR(ch_num),hcchar.d32);
 
-/* sztupy: Enable split transaction support if driver is in HS mode */
+	/* sztupy: Enable split transaction support if driver is in HS mode */
 	if (st_t->ed_desc_p->is_do_split) {
-	  printk("splittrans");
-	  hcsplt.b.spltena = 1;
-	  hcsplt.b.hubaddr = st_t->ed_desc_p->hub_addr;
-	  hcsplt.b.prtaddr = st_t->ed_desc_p->hub_port;
-	  hcsplt.b.xactpos = st_t->ed_status_p->split_pos;
-	  hcsplt.b.compsplt = st_t->ed_status_p->is_complete_split;
+		printk("splittrans");
+		hcsplt.b.spltena = 1;
+		hcsplt.b.hubaddr = st_t->ed_desc_p->hub_addr;
+		hcsplt.b.prtaddr = st_t->ed_desc_p->hub_port;
+		hcsplt.b.xactpos = st_t->ed_status_p->split_pos;
+		hcsplt.b.compsplt = st_t->ed_status_p->is_complete_split;
 	}
-	write_reg_32(HCSPLT(ch_num),hcsplt.d32);	
-	
+	write_reg_32(HCSPLT(ch_num),hcsplt.d32);
+
 	return USB_ERR_SUCCESS;
 }
 

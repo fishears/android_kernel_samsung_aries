@@ -118,13 +118,13 @@ static int s5pc110_otg_drv_probe (struct platform_device *pdev)
 		goto err_out_create_hcd;
 	}
 	otghost->otg_data = otg_data;
-	
-	if ((s3c_get_drivermode()) & USB_OTG_DRIVER_S3CFSLS) {
+
+        if ((s3c_get_drivermode()) & USB_OTG_DRIVER_S3CFSLS) {
                 otghost->is_hs = 0; // force USB 1.x mode
         } else {
                 otghost->is_hs = 1;
         }
-        
+
 	INIT_WORK(&otghost->work, otg_power_work);
 	otghost->wq = create_singlethread_workqueue("sec_otghostd");
 

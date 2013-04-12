@@ -113,8 +113,8 @@ irqreturn_t	s5pc110_otghcd_irq(struct usb_hcd *hcd)
 int	s5pc110_otghcd_start(struct usb_hcd *usb_hcd_p)
 {
 	struct	usb_bus *usb_bus_p;
-	struct 	sec_otghost *otghost = hcd_to_sec_otghost(usb_hcd_p);
-	
+	struct sec_otghost *otghost = hcd_to_sec_otghost(usb_hcd_p);
+
 	otg_dbg(OTG_DBG_OTGHCDI_HCD, "s5pc110_otghcd_start \n");
 
 	usb_bus_p = hcd_to_bus(usb_hcd_p);
@@ -343,7 +343,7 @@ int s5pc110_otghcd_urb_enqueue (struct usb_hcd *hcd,
 				    (dev_speed == LOW_SPEED_OTG)) &&
 				    	(urb->dev->tt) && (urb->dev->tt->hub->devnum != 1)) {
 					if (otghost->is_hs) // only allow split transactions in HS mode
-					  f_is_do_split = true;
+						f_is_do_split = true;
 				}
 				hub_addr = (u8)(urb->dev->tt->hub->devnum);
 			}
