@@ -5713,6 +5713,7 @@ void usb_host_phy_off(void)
 			S5P_USB_PHY_CONTROL);
 }
 EXPORT_SYMBOL(usb_host_phy_off);
+
 #if defined CONFIG_USB_S3C_OTG_HOST || defined CONFIG_USB_DWC_OTG
 
 /* Initializes OTG Phy */
@@ -5753,6 +5754,7 @@ EXPORT_SYMBOL(otg_host_phy_init);
 
 
 #endif
+
 #endif
 
 MACHINE_START(ARIES, "aries")
