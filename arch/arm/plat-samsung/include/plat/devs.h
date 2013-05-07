@@ -114,7 +114,6 @@ extern struct platform_device s3c_device_android_usb;
 extern struct platform_device s3c_device_usb_mass_storage;
 extern struct platform_device s3c_device_rndis;
 extern struct platform_device s3c_device_usb_hsotg;
-
 #if defined CONFIG_USB_S3C_OTG_HOST
 extern struct platform_device s3c_device_usb_otghcd;
 #endif
